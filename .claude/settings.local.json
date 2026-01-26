@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc2OTE2Mzg1Mn0.uSaf3nRyOhe2nC0b-dPqw-Y9t6KykXc45uN9Zs_J9Uo\" curl -s -X GET \"http://127.0.0.1:8000/api/v1/admin/requests\" -H \"Authorization: Bearer $TOKEN\")",
+      "Bash(python3:*)",
+      "Bash(source venv/bin/activate)",
+      "Bash(sqlite3:*)"
+    ]
+  }
+}
