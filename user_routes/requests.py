@@ -37,18 +37,14 @@ def submit_request(request:ResourceRequestCreate,db: Session = Depends(get_db),u
     return resource_request
 
 
-@request_router.get("/requests",response_model=List[ResourceRequestResponse])
-def view_my_requests(db: Session = Depends(get_db), user = Depends(get_current_user)):
+@request_router.get("/requests",response_model=ResourceRequestResponse)
+def view_my_request(db: Session = Depends(get_db),user = Depends(get_current_user)):
     requests = db.query(ResourceRequest).filter(ResourceRequest.user_id == user.id).all()
     return requests
 
 
-@request_router.get("/requests/{request_id}",response_model=ResourceRequestResponse)
-def get_my_request(request_id: int, db: Session = Depends(get_db), user = Depends(get_current_user)):
-    request = db.query(ResourceRequest).filter(
-        ResourceRequest.id == request_id,
-        ResourceRequest.user_id == user.id
-    ).first()
-    if not request:
-        raise HTTPException(status_code=404, detail="Request not found")
-    return request
+@request_router.get("/requests/{id}",response_model=ResourceRequestResponse)
+def view_my_request(db: Session = Depends(get_db),user = Depends(get_current_user)):
+    requests = db.query(ResourceRequest).filter(ResourceRequest.user_id == user.id,
+    ResourceRequest.user_id == user.id ).all()
+    return requests
