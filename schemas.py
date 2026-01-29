@@ -28,7 +28,7 @@ class UserResponse(UserBase):
     created_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 # ============ Team Schemas ============
@@ -53,7 +53,7 @@ class TeamResponse(TeamBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class TeamWithMembers(TeamResponse):
@@ -94,7 +94,7 @@ class ResourceRequestResponse(ResourceRequestBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class ResourceRequestApproval(BaseModel):
@@ -103,3 +103,31 @@ class ResourceRequestApproval(BaseModel):
 
 class ResourceRequestRejection(BaseModel):
     admin_notes: str  # Required when rejecting
+
+
+# ============ AWS Credentials Schemas ============
+class AWSCredentialsCreate(BaseModel):
+    team_id: Optional[int] = None
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_region: str = "us-east-1"
+    aws_session_token: Optional[str] = None
+
+
+class AWSCredentialsResponse(BaseModel):
+    id: int
+    team_id: Optional[int]
+    aws_region: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class AWSCredentialsTestResult(BaseModel):
+    success: bool
+    message: str
+    account_id: Optional[str] = None
+    user_arn: Optional[str] = None

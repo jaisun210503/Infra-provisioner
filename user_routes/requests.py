@@ -23,12 +23,14 @@ request_router = APIRouter(prefix="/api/v1/users", tags=["User Requests"])
 
 @request_router.post("/requests/submit",response_model=ResourceRequestResponse)
 def submit_request(request:ResourceRequestCreate,db: Session = Depends(get_db),user = Depends(get_current_user)):
+    if not user.team_id:
+        raise HTTPException(status_code=400, detail="You must be assigned to a team before submitting requests. Please contact an admin.")
     if request.resource_type and request.name is not None:
         resource_request = ResourceRequest(
             name = request.name,
             resource_type = request.resource_type,
             config = request.config,
-            user_id=user.id,           # ← Add this                                                                                                      
+            user_id=user.id,
             team_id=user.team_id
               )
         db.add(resource_request)

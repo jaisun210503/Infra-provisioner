@@ -25,7 +25,9 @@ const Login = () => {
 
     try {
       if (isLogin) {
+        console.log('[Login] Submitting login form for username:', formData.username);
         const user = await login(formData.username, formData.password);
+        console.log('[Login] Login successful, redirecting...');
         if (user.is_admin) {
           navigate('/admin');
         } else {
@@ -38,7 +40,9 @@ const Login = () => {
         alert('Registration successful! Please login.');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || 'Something went wrong');
+      console.error('[Login] Login error:', err);
+      const errorMsg = err.response?.data?.detail || 'Login failed. Please check your credentials.';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

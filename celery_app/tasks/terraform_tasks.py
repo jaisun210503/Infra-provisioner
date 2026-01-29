@@ -22,6 +22,59 @@ TERRAFORM_WORKSPACES_PATH = os.path.join(BASE_DIR, "terraform", "workspaces")
 DRY_RUN_MODE = True
 
 
+def _get_team_aws_credentials(team_id: int, db_session) -> dict:
+    """
+    Retrieve and decrypt AWS credentials for team with fallback.
+
+    Fallback chain:
+    1. Team-specific credentials
+    2. Global default credentials (team_id = NULL)
+    3. Environment variables
+
+    Args:
+        team_id: The team ID to get credentials for
+        db_session: Database session
+
+    Returns:
+        Dictionary with AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
+    """
+    from models import AWSCredentials
+    from utils.encryption import decrypt_credential
+
+    # Try team-specific credentials
+    credentials = db_session.query(AWSCredentials).filter(
+        AWSCredentials.team_id == team_id,
+        AWSCredentials.is_active == True
+    ).first()
+
+    # Fallback to global default
+    if not credentials:
+        credentials = db_session.query(AWSCredentials).filter(
+            AWSCredentials.team_id == None,
+            AWSCredentials.is_active == True
+        ).first()
+
+    # Final fallback to environment variables
+    if not credentials:
+        return {
+            'AWS_ACCESS_KEY_ID': os.getenv('AWS_ACCESS_KEY_ID', ''),
+            'AWS_SECRET_ACCESS_KEY': os.getenv('AWS_SECRET_ACCESS_KEY', ''),
+            'AWS_DEFAULT_REGION': os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+        }
+
+    # Decrypt and return
+    env_vars = {
+        'AWS_ACCESS_KEY_ID': decrypt_credential(credentials.aws_access_key_id_encrypted),
+        'AWS_SECRET_ACCESS_KEY': decrypt_credential(credentials.aws_secret_access_key_encrypted),
+        'AWS_DEFAULT_REGION': credentials.aws_region
+    }
+
+    if credentials.aws_session_token_encrypted:
+        env_vars['AWS_SESSION_TOKEN'] = decrypt_credential(credentials.aws_session_token_encrypted)
+
+    return env_vars
+
+
 @celery_app.task(bind=True, max_retries=3)
 def provision_resource(self, request_id: int):
     db = SessionLocal()
@@ -42,7 +95,7 @@ def provision_resource(self, request_id: int):
         request.status = "provisioning"
         db.commit()
 
-        result = _provision_by_type(request)
+        result = _provision_by_type(request, db)
 
         if result["success"]:
             request.status = "provisioned"
@@ -74,7 +127,7 @@ def provision_resource(self, request_id: int):
         db.close()
 
 
-def _provision_by_type(request: ResourceRequest) -> dict:
+def _provision_by_type(request: ResourceRequest, db_session=None) -> dict:
     resource_type = request.resource_type
     config = request.config or {}
     name = request.name
@@ -82,11 +135,11 @@ def _provision_by_type(request: ResourceRequest) -> dict:
     logger.info(f"Provisioning {resource_type}: {name} with config: {config}")
 
     if resource_type == "database":
-        return _provision_database(request)
+        return _provision_database(request, db_session)
     elif resource_type == "s3":
-        return _provision_s3(request)
+        return _provision_s3(request, db_session)
     elif resource_type == "k8s_namespace":
-        return _provision_k8s_namespace(request)
+        return _provision_k8s_namespace(request, db_session)
     else:
         return {"success": False, "error": f"Unknown resource type: {resource_type}"}
 
@@ -150,7 +203,7 @@ variable "kubeconfig_path" {
         f.write(provider_tf)
 
 
-def _provision_database(request: ResourceRequest) -> dict:
+def _provision_database(request: ResourceRequest, db_session=None) -> dict:
     config = request.config or {}
     workspace_dir = _create_workspace(request.id, "database")
 
@@ -219,10 +272,10 @@ aws_region     = "{config.get('region', 'us-east-1')}"
     with open(os.path.join(workspace_dir, "terraform.tfvars"), "w") as f:
         f.write(tfvars)
 
-    return _run_terraform_workflow(workspace_dir)
+    return _run_terraform_workflow(workspace_dir, request.team_id, db_session)
 
 
-def _provision_s3(request: ResourceRequest) -> dict:
+def _provision_s3(request: ResourceRequest, db_session=None) -> dict:
     config = request.config or {}
     workspace_dir = _create_workspace(request.id, "s3")
 
@@ -265,10 +318,10 @@ aws_region = "{config.get('region', 'us-east-1')}"
     with open(os.path.join(workspace_dir, "terraform.tfvars"), "w") as f:
         f.write(tfvars)
 
-    return _run_terraform_workflow(workspace_dir)
+    return _run_terraform_workflow(workspace_dir, request.team_id, db_session)
 
 
-def _provision_k8s_namespace(request: ResourceRequest) -> dict:
+def _provision_k8s_namespace(request: ResourceRequest, db_session=None) -> dict:
     config = request.config or {}
     workspace_dir = _create_workspace(request.id, "k8s_namespace")
 
@@ -319,17 +372,17 @@ kubeconfig_path       = "{config.get('kubeconfig', '~/.kube/config')}"
     with open(os.path.join(workspace_dir, "terraform.tfvars"), "w") as f:
         f.write(tfvars)
 
-    return _run_terraform_workflow(workspace_dir)
+    return _run_terraform_workflow(workspace_dir, request.team_id, db_session)
 
 
-def _run_terraform_workflow(workspace_dir: str) -> dict:
+def _run_terraform_workflow(workspace_dir: str, team_id: int = None, db_session=None) -> dict:
     logger.info(f"Running Terraform in {workspace_dir} (DRY_RUN={DRY_RUN_MODE})")
 
-    init_result = _run_terraform(workspace_dir, ["init", "-no-color"])
+    init_result = _run_terraform(workspace_dir, ["init", "-no-color"], team_id, db_session)
     if not init_result["success"]:
         return {"success": False, "error": f"Terraform init failed:\n{init_result['error']}"}
 
-    plan_result = _run_terraform(workspace_dir, ["plan", "-no-color", "-out=tfplan"])
+    plan_result = _run_terraform(workspace_dir, ["plan", "-no-color", "-out=tfplan"], team_id, db_session)
     if not plan_result["success"]:
         return {"success": False, "error": f"Terraform plan failed:\n{plan_result['error']}"}
 
@@ -340,11 +393,11 @@ def _run_terraform_workflow(workspace_dir: str) -> dict:
             "output": f"[DRY RUN] Plan completed successfully.\nWorkspace: {workspace_dir}\n\nPlan output:\n{plan_result['output'][:2000]}"
         }
 
-    apply_result = _run_terraform(workspace_dir, ["apply", "-no-color", "-auto-approve", "tfplan"])
+    apply_result = _run_terraform(workspace_dir, ["apply", "-no-color", "-auto-approve", "tfplan"], team_id, db_session)
     if not apply_result["success"]:
         return {"success": False, "error": f"Terraform apply failed:\n{apply_result['error']}"}
 
-    output_result = _run_terraform(workspace_dir, ["output", "-json"])
+    output_result = _run_terraform(workspace_dir, ["output", "-json"], team_id, db_session)
     if output_result["success"]:
         try:
             outputs = json.loads(output_result["output"])
@@ -356,16 +409,26 @@ def _run_terraform_workflow(workspace_dir: str) -> dict:
     return {"success": True, "output": apply_result["output"]}
 
 
-def _run_terraform(workspace_dir: str, command: list) -> dict:
+def _run_terraform(workspace_dir: str, command: list, team_id: int = None, db_session=None) -> dict:
     try:
         logger.info(f"Running: terraform {' '.join(command)}")
+
+        # Prepare environment
+        env = os.environ.copy()
+
+        # Inject AWS credentials if available
+        if team_id and db_session:
+            aws_env = _get_team_aws_credentials(team_id, db_session)
+            env.update(aws_env)
+            logger.info(f"Injected AWS credentials for team {team_id}")
 
         result = subprocess.run(
             ["terraform"] + command,
             cwd=workspace_dir,
             capture_output=True,
             text=True,
-            timeout=600
+            timeout=600,
+            env=env  # Pass environment with AWS credentials
         )
 
         if result.returncode == 0:

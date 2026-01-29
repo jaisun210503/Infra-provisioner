@@ -5,9 +5,18 @@ from typing import List
 from auth.auth import get_current_admin_user
 from database import get_db
 from models import Team, User
-from schemas import TeamCreate, TeamUpdate, TeamResponse, AddMemberRequest
+from schemas import TeamCreate, TeamUpdate, TeamResponse, AddMemberRequest, UserResponse
 
 admin = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
+
+
+@admin.get("/users", response_model=List[UserResponse])
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    users = db.query(User).filter(User.is_admin == False).all()
+    return users
 
 
 @admin.post("/teams", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)

@@ -27,11 +27,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (username, password) => {
-    await authService.login(username, password);
-    const userData = await authService.getMe();
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    return userData;
+    try {
+      console.log('[AuthContext] Login attempt for:', username);
+
+      const data = await authService.login(username, password);
+      console.log('[AuthContext] Login successful, fetching user data...');
+
+      const userData = await authService.getMe();
+      console.log('[AuthContext] User data received:', {
+        id: userData.id,
+        username: userData.username,
+        is_admin: userData.is_admin
+      });
+
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
+
+    } catch (error) {
+      console.error('[AuthContext] Login failed:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        message: error.response?.data?.detail || error.message,
+        fullError: error
+      });
+      throw error;
+    }
   };
 
   const register = async (email, username, password) => {

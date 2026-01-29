@@ -125,6 +125,43 @@ export const adminService = {
     });
     return response.data;
   },
+
+  async getUsers() {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+
+  async getAWSCredentials() {
+    const response = await api.get('/admin/aws-credentials');
+    return response.data;
+  },
+
+  async createAWSCredentials(credentials) {
+    const response = await api.post('/admin/aws-credentials', {
+      team_id: credentials.team_id ? parseInt(credentials.team_id) : null,
+      aws_access_key_id: credentials.aws_access_key_id,
+      aws_secret_access_key: credentials.aws_secret_access_key,
+      aws_region: credentials.aws_region,
+      aws_session_token: credentials.aws_session_token || null
+    });
+    return response.data;
+  },
+
+  async testAWSCredentials(credentials) {
+    const response = await api.post('/admin/aws-credentials/test', {
+      team_id: credentials.team_id ? parseInt(credentials.team_id) : null,
+      aws_access_key_id: credentials.aws_access_key_id,
+      aws_secret_access_key: credentials.aws_secret_access_key,
+      aws_region: credentials.aws_region,
+      aws_session_token: credentials.aws_session_token || null
+    });
+    return response.data;
+  },
+
+  async deleteAWSCredentials(teamId) {
+    const response = await api.delete(`/admin/aws-credentials/${teamId}`);
+    return response.data;
+  }
 };
 
 export default api;

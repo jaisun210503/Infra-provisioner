@@ -1,0 +1,33 @@
+INFO:     Will watch for changes in these directories: ['/Users/kavikondalajayasurya/infrautomater']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [58979] using WatchFiles
+/Users/kavikondalajayasurya/infrautomater/venv/lib/python3.9/site-packages/pydantic/_internal/_config.py:341: UserWarning: Valid config keys have changed in V2:
+* 'orm_mode' has been renamed to 'from_attributes'
+  warnings.warn(message, UserWarning)
+2026-01-28 17:05:22,489 - main - INFO - Application starting...
+INFO:     Started server process [58984]
+INFO:     Waiting for application startup.
+2026-01-28 17:05:22,520 - main - INFO - FastAPI application started successfully
+2026-01-28 17:05:22,520 - main - INFO - Database: sqlite:///./infra.db
+2026-01-28 17:05:22,520 - main - INFO - CORS enabled for: http://localhost:3000, http://127.0.0.1:3000
+INFO:     Application startup complete.
+INFO:     127.0.0.1:62162 - "GET /health HTTP/1.1" 200 OK
+2026-01-28 17:06:20,639 - user_routes.users - INFO - Login attempt for username: admin
+2026-01-28 17:06:21,226 - user_routes.users - INFO - Login successful for user: admin (ID: 1)
+INFO:     127.0.0.1:62262 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+2026-01-29 09:49:49,427 - user_routes.users - INFO - Login attempt for username: admin
+2026-01-29 09:49:49,770 - user_routes.users - INFO - Login successful for user: admin (ID: 1)
+INFO:     127.0.0.1:52985 - "POST /api/v1/auth/login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "OPTIONS /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/auth/me HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "OPTIONS /api/v1/admin/requests HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52987 - "OPTIONS /api/v1/admin/requests HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/admin/requests HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/admin/requests HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52990 - "OPTIONS /api/v1/admin/aws-credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52993 - "OPTIONS /api/v1/admin/teams HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52994 - "OPTIONS /api/v1/admin/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52990 - "GET /api/v1/admin/aws-credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52993 - "GET /api/v1/admin/users HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52994 - "GET /api/v1/admin/teams HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53001 - "GET /api/v1/admin/requests HTTP/1.1" 200 OK

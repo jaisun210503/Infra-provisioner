@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+import logging
 
 from database import get_db
 from models import User, Team
@@ -14,6 +15,8 @@ from auth.auth import (
     get_current_user,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+
+logger = logging.getLogger(__name__)
 
 user_router = APIRouter(prefix="/api/v1/auth", tags=["Auth"])
 
@@ -46,11 +49,13 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
 
 @user_router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    logger.info(f"Login attempt for username: {form_data.username}")
 
     user = db.query(User).filter(User.username == form_data.username).first()
 
 
     if not user:
+        logger.warning(f"Login failed: User '{form_data.username}' not found")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -59,6 +64,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 
     if not verify_password(form_data.password, user.password_hash):
+        logger.warning(f"Login failed: Invalid password for user '{form_data.username}'")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -71,6 +77,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         data={"sub": user.username},
         expires_delta=access_token_expires
     )
+
+    logger.info(f"Login successful for user: {form_data.username} (ID: {user.id})")
 
     # 5. Return token
     return {"access_token": access_token, "token_type": "bearer"}
