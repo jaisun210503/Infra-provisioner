@@ -31,3 +31,18 @@ INFO:     127.0.0.1:52990 - "GET /api/v1/admin/aws-credentials HTTP/1.1" 200 OK
 INFO:     127.0.0.1:52993 - "GET /api/v1/admin/users HTTP/1.1" 200 OK
 INFO:     127.0.0.1:52994 - "GET /api/v1/admin/teams HTTP/1.1" 200 OK
 INFO:     127.0.0.1:53001 - "GET /api/v1/admin/requests HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'celery_app/tasks/terraform_tasks.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [58984]
+/Users/kavikondalajayasurya/infrautomater/venv/lib/python3.9/site-packages/pydantic/_internal/_config.py:341: UserWarning: Valid config keys have changed in V2:
+* 'orm_mode' has been renamed to 'from_attributes'
+  warnings.warn(message, UserWarning)
+2026-01-29 09:51:39,131 - main - INFO - Application starting...
+INFO:     Started server process [63065]
+INFO:     Waiting for application startup.
+2026-01-29 09:51:39,163 - main - INFO - FastAPI application started successfully
+2026-01-29 09:51:39,164 - main - INFO - Database: sqlite:///./infra.db
+2026-01-29 09:51:39,164 - main - INFO - CORS enabled for: http://localhost:3000, http://127.0.0.1:3000
+INFO:     Application startup complete.
